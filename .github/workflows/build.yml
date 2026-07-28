@@ -1,0 +1,129 @@
+name: Build MurtazaGram APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout MurtazaGram config
+      uses: actions/checkout@v4
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Set up Android SDK
+      uses: android-actions/setup-android@v3
+      with:
+        api-level: 34
+        build-tools-version: '34.0.0'
+        ndk-version: '27.1.12297006'
+    
+    - name: Clone Telegram and apply MurtazaGram modifications
+      run: |
+        git clone --depth 1 https://github.com/DrKLO/Telegram.git Telegram
+        cd Telegram
+        
+        # === BRANDING ===
+        sed -i 's/APP_VERSION_CODE=.*/APP_VERSION_CODE=1/' gradle.properties
+        sed -i 's/APP_VERSION_NAME=.*/APP_VERSION_NAME=1.0-MurtazaGram/' gradle.properties
+        sed -i 's/APP_PACKAGE=.*/APP_PACKAGE=com.murtaza.gram/' gradle.properties
+        
+        sed -i 's/<string name="AppName">Telegram<\/string>/<string name="AppName">MurtazaGram<\/string>/' TMessagesProj/src/main/res/values/strings.xml
+        sed -i 's/<string name="AppNameBeta">Telegram Beta<\/string>/<string name="AppNameBeta">MurtazaGram Beta<\/string>/' TMessagesProj/src/main/res/values/strings.xml
+        sed -i 's/Welcome to Telegram/Welcome to MurtazaGram/g' TMessagesProj/src/main/res/values/strings.xml
+        sed -i 's/Your contacts on Telegram/Your contacts on MurtazaGram/g' TMessagesProj/src/main/res/values/strings.xml
+        sed -i 's/Check your Telegram messages/Check your MurtazaGram messages/g' TMessagesProj/src/main/res/values/strings.xml
+        
+        # === DARK THEME ===
+        sed -i 's/public static final int TELEGRAM_COLOR = 0xFF229AF0;/public static final int TELEGRAM_COLOR = 0xFF7B2FBE; \/\/ MurtazaGram/' TMessagesProj/src/main/java/org/telegram/ui/ActionBar/ThemeColors.java
+        sed -i 's/public static final int TELEGRAM_COLOR_TEXT = 0xFF298ACF;/public static final int TELEGRAM_COLOR_TEXT = 0xFF7B2FBE; \/\/ MurtazaGram/' TMessagesProj/src/main/java/org/telegram/ui/ActionBar/ThemeColors.java
+        sed -i 's/public static final int DEFAULT_BLACK_TEXT = 0xFF1A1D21;/public static final int DEFAULT_BLACK_TEXT = 0xFFE0E0E0; \/\/ MurtazaGram/' TMessagesProj/src/main/java/org/telegram/ui/ActionBar/ThemeColors.java
+        sed -i 's/defaultColors\[key_windowBackgroundWhite\] = 0xffffffff;/defaultColors[key_windowBackgroundWhite] = 0xff0A0A0A; \/\/ MurtazaGram/' TMessagesProj/src/main/java/org/telegram/ui/ActionBar/ThemeColors.java
+        sed -i 's/defaultColors\[key_windowBackgroundGray\] = 0xffF1F1F3;/defaultColors[key_windowBackgroundGray] = 0xff111111; \/\/ MurtazaGram/' TMessagesProj/src/main/java/org/telegram/ui/ActionBar/ThemeColors.java
+        sed -i 's/defaultColors\[key_actionBarDefault\] = 0xffffffff;/defaultColors[key_actionBarDefault] = 0xff111111; \/\/ MurtazaGram/' TMessagesProj/src/main/java/org/telegram/ui/ActionBar/ThemeColors.java
+        sed -i 's/defaultColors\[key_chat_inBubble\] = 0xffffffff;/defaultColors[key_chat_inBubble] = 0xff1A1A2E; \/\/ MurtazaGram/' TMessagesProj/src/main/java/org/telegram/ui/ActionBar/ThemeColors.java
+        sed -i 's/defaultColors\[key_chat_outBubble\] = 0xffefffde;/defaultColors[key_chat_outBubble] = 0xff2D1B4E; \/\/ MurtazaGram/' TMessagesProj/src/main/java/org/telegram/ui/ActionBar/ThemeColors.java
+        sed -i 's/defaultColors\[key_windowBackgroundChecked\] = 0xff229AF0;/defaultColors[key_windowBackgroundChecked] = 0xff7B2FBE; \/\/ MurtazaGram/' TMessagesProj/src/main/java/org/telegram/ui/ActionBar/ThemeColors.java
+        sed -i 's/defaultColors\[key_progressCircle\] = 0xff1c93e3;/defaultColors[key_progressCircle] = 0xff7B2FBE; \/\/ MurtazaGram/' TMessagesProj/src/main/java/org/telegram/ui/ActionBar/ThemeColors.java
+        
+        # === DOWNLOAD SPEED ===
+        sed -i 's/private int maxDownloadRequests = 4;/private int maxDownloadRequests = 16; \/\/ MurtazaGram/' TMessagesProj/src/main/java/org/telegram/messenger/FileLoadOperation.java
+        sed -i 's/private int maxDownloadRequestsBig = 4;/private int maxDownloadRequestsBig = 16; \/\/ MurtazaGram/' TMessagesProj/src/main/java/org/telegram/messenger/FileLoadOperation.java
+        sed -i 's/private final static int preloadMaxBytes = 2 \* 1024 \* 1024;/private final static int preloadMaxBytes = 4 * 1024 * 1024; \/\/ MurtazaGram/' TMessagesProj/src/main/java/org/telegram/messenger/FileLoadOperation.java
+        
+        # === PINNED DIALOGS LIMIT ===
+        sed -i 's/maxPinnedDialogsCountDefault = mainPreferences.getInt("maxPinnedDialogsCountDefault", 5);/maxPinnedDialogsCountDefault = mainPreferences.getInt("maxPinnedDialogsCountDefault", 20); \/\/ MurtazaGram/g' TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
+        sed -i 's/maxPinnedDialogsCountPremium = mainPreferences.getInt("maxPinnedDialogsCountPremium", 5);/maxPinnedDialogsCountPremium = mainPreferences.getInt("maxPinnedDialogsCountPremium", 20); \/\/ MurtazaGram/g' TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
+        
+        # === ENABLE FILTER TABS ===
+        sed -i 's/filtersEnabled = mainPreferences.getBoolean("filtersEnabled", false);/filtersEnabled = mainPreferences.getBoolean("filtersEnabled", true); \/\/ MurtazaGram/' TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
+        
+        # === BYPASS NOFORWARDS ===
+        sed -i '/public boolean isPeerNoForwards(long dialogId)/,/return isPeerNoForwards/s/return isPeerNoForwards.*/return false; \/\/ MurtazaGram: bypass noforwards/' TMessagesProj/src/main/java/org/telegram/messenger/MessagesController.java
+        
+        # === ALWAYS ENABLE TRANSLATE ===
+        sed -i '/public boolean isContextTranslateEnabled/,/}/s/return contextTranslateEnabled;/return true; \/\/ MurtazaGram: always enable translate/' TMessagesProj/src/main/java/org/telegram/messenger/TranslateController.java
+        
+        # === UNIQUE NOTIFICATION CHANNELS ===
+        sed -i 's/"mg_Other/"murtazagram_Other/g; s/"mg_channels"/"murtazagram_channels"/g; s/"mg_groups"/"murtazagram_groups"/g; s/"mg_private"/"murtazagram_private"/g; s/"mg_stories"/"murtazagram_stories"/g; s/"mg_other"/"murtazagram_other"/g' TMessagesProj/src/main/java/org/telegram/messenger/NotificationsController.java
+        
+        # === REMOVE COPY RESTRICTION ===
+        sed -i 's/actionMode.setItemVisibility(copy, !isPeerNoForwards() \&\& selectedMessagesCanCopyIds/actionMode.setItemVisibility(copy, selectedMessagesCanCopyIds/' TMessagesProj/src/main/java/org/telegram/ui/ChatActivity.java
+        
+        echo "All MurtazaGram modifications applied!"
+    
+    - name: Build debug APK
+      run: |
+        cd Telegram
+        chmod +x gradlew
+        ./gradlew assembleDebug --no-daemon -x lint
+      env:
+        GRADLE_OPTS: "-Xmx4096m -Dorg.gradle.jvmargs=-Xmx4096m"
+    
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: murtazagram-debug-apk
+        path: |
+          Telegram/TMessagesProj/build/outputs/apk/debug/*.apk
+          Telegram/TMessagesProj_App/build/outputs/apk/debug/*.apk
+        retention-days: 30
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v1.0.0-${{ github.run_number }}
+        name: MurtazaGram v1.0.0 Build #${{ github.run_number }}
+        body: |
+          # MurtazaGram - Modified Telegram Client
+          
+          ## Features
+          - Custom dark theme (#0A0A0A background, #7B2FBE purple accent)
+          - Extreme download speed (16 parallel connections)
+          - Auto message translation
+          - Forward from restricted chats
+          - Copy text from restricted chats
+          - Pin up to 20 dialogs
+          - Filter tabs enabled by default
+          - Unique notification channels (no conflict with official Telegram)
+          
+          ## Installation
+          1. Download the APK file below
+          2. Enable "Install from unknown sources" in Android settings
+          3. Install the APK
+          4. MurtazaGram installs alongside official Telegram
+        files: |
+          Telegram/TMessagesProj/build/outputs/apk/debug/*.apk
+          Telegram/TMessagesProj_App/build/outputs/apk/debug/*.apk
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
