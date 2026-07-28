@@ -2,7 +2,7 @@ name: Build MurtazaGram APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   workflow_dispatch:
 
 permissions:
@@ -12,5 +12,40 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Test
-        run: echo "MurtazaGram build test"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools-version: '34.0.0'
+          ndk-version: '27.1.12297006'
+      - name: Clone and patch Telegram
+        run: bash build_murtazagram.sh
+      - name: Build APK
+        run: |
+          cd Telegram
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon -x lint
+        env:
+          GRADLE_OPTS: "-Xmx4096m"
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: murtazagram-apk
+          path: |
+            Telegram/TMessagesProj/build/outputs/apk/debug/*.apk
+            Telegram/TMessagesProj_App/build/outputs/apk/debug/*.apk
+          retention-days: 30
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v1.0.0-${{ github.run_number }}
+          name: MurtazaGram Build ${{ github.run_number }}
+          files: |
+            Telegram/TMessagesProj/build/outputs/apk/debug/*.apk
+            Telegram/TMessagesProj_App/build/outputs/apk/debug/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
